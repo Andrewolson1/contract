@@ -6,9 +6,7 @@ pragma solidity >=0.7.0 <0.9.0;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ERC721 {
-  function ownerOf(uint tokenId) public virtual view returns (address);
-}
+
 
 contract NFT is ERC721Enumerable, Ownable {
   using Strings for uint256;
@@ -31,12 +29,12 @@ contract NFT is ERC721Enumerable, Ownable {
     string memory _name,
     string memory _symbol,
     string memory _initBaseURI,
-    string memory _initNotRevealedUri
-    address memory _originalNFT
+    string memory _initNotRevealedUri,
+    address _originalNFT
   ) ERC721(_name, _symbol) {
     setBaseURI(_initBaseURI);
     setNotRevealedURI(_initNotRevealedUri);
-    OriginalNFT = _originaNFT;
+    OriginalNFT = _originalNFT;
   }
 
   // internal
@@ -79,9 +77,6 @@ contract NFT is ERC721Enumerable, Ownable {
       revealed = true;
   }
   
-  function setNftPerAddressLimit(uint256 _limit) public onlyOwner {
-    nftPerAddressLimit = _limit;
-  }
   
   function setCost(uint256 _newCost) public onlyOwner {
     cost = _newCost;
@@ -105,15 +100,6 @@ contract NFT is ERC721Enumerable, Ownable {
 
   function pause(bool _state) public onlyOwner {
     paused = _state;
-  }
-  
-  function setOnlyWhitelisted(bool _state) public onlyOwner {
-    onlyWhitelisted = _state;
-  }
-  
-  function whitelistUsers(address[] calldata _users) public onlyOwner {
-    delete whitelistedAddresses;
-    whitelistedAddresses = _users;
   }
  
   function withdraw() public payable onlyOwner {
