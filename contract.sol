@@ -6,6 +6,10 @@ pragma solidity >=0.7.0 <0.9.0;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+contract ERC721 {
+  function ownerOf(uint tokenId) public virtual view returns (address);
+}
+
 contract NFT is ERC721Enumerable, Ownable {
   using Strings for uint256;
 
@@ -15,22 +19,24 @@ contract NFT is ERC721Enumerable, Ownable {
   uint256 public cost = 0 ether;
   uint256 public maxSupply = 4000;
   uint256 public maxMintAmount = 3;
-  uint256 public nftPerAddressLimit = 1;
   bool public paused = false;
   bool public revealed = false;
-  bool public onlyWhitelisted = true;
-  address[] public whitelistedAddresses;
   mapping(address => uint256) public addressMintedBalance;
 
+  address public OriginalNFT;
+  mapping(uint => bool) public minted;
+  
 
   constructor(
     string memory _name,
     string memory _symbol,
     string memory _initBaseURI,
     string memory _initNotRevealedUri
+    address memory _originalNFT
   ) ERC721(_name, _symbol) {
     setBaseURI(_initBaseURI);
     setNotRevealedURI(_initNotRevealedUri);
+    OriginalNFT = _originaNFT;
   }
 
   // internal
@@ -39,50 +45,13 @@ contract NFT is ERC721Enumerable, Ownable {
   }
 
   // public
-  function mint(uint256 _mintAmount) public payable {
+  function mint(uint tokenId) public payable {
     require(!paused, "the contract is paused");
-    uint256 supply = totalSupply();
-    require(_mintAmount > 0, "need to mint at least 1 NFT");
-    require(_mintAmount <= maxMintAmount, "max mint amount per session exceeded");
-    require(supply + _mintAmount <= maxSupply, "max NFT limit exceeded");
-
-    if (msg.sender != owner()) {
-        if(onlyWhitelisted == true) {
-            require(isWhitelisted(msg.sender), "user is not whitelisted");
-            uint256 ownerMintedCount = addressMintedBalance[msg.sender];
-            require(ownerMintedCount + _mintAmount <= nftPerAddressLimit, "max NFT per address exceeded");
-        }
-        require(msg.value >= cost * _mintAmount, "insufficient funds");
-    }
-    
-    for (uint256 i = 1; i <= _mintAmount; i++) {
-        addressMintedBalance[msg.sender]++;
-      _safeMint(msg.sender, supply + i);
-    }
+    require(minted[tokenId]==false,"tokenId already minted");
+    require(ERC721(OriginalNFT).ownerOf(tokenId) == msg.sender,"You are not the owner of this NFT");
+    _safeMint(msg.sender, tokenId);
   }
-  
-  function isWhitelisted(address _user) public view returns (bool) {
-    for (uint i = 0; i < whitelistedAddresses.length; i++) {
-      if (whitelistedAddresses[i] == _user) {
-          return true;
-      }
-    }
-    return false;
-  }
-
-  function walletOfOwner(address _owner)
-    public
-    view
-    returns (uint256[] memory)
-  {
-    uint256 ownerTokenCount = balanceOf(_owner);
-    uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-    for (uint256 i; i < ownerTokenCount; i++) {
-      tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-    }
-    return tokenIds;
-  }
-
+ 
   function tokenURI(uint256 tokenId)
     public
     view
